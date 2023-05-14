@@ -27,6 +27,7 @@ Y = 400
 counter = 0
 acceleration = 1
 speed = 10
+speed2 = speed
 
 
 
@@ -38,12 +39,20 @@ class Boards:
         self.X = 20
         self.Y = 400
         self.speed = 0
+        self.speed2 = 0
+
+        self.X2 = 960
+        self.Y2 = 400
+        
         
 
     def draw(self):
         board_thic = 20
         board_len = 100
         pg.draw.rect(DIS, WHITE, (self.X, int(self.Y), board_thic, board_len), border_radius=5)
+        pg.draw.rect(DIS, WHITE, (self.X2, int(self.Y2), board_thic, board_len), border_radius=5)
+
+    
 
 class Ball:
     def __init__(self, board):
@@ -59,17 +68,22 @@ class Ball:
     def move(self, circle_draw, board_draw):
         global counter, acceleration
         board_rect = pg.Rect(self.board.X, self.board.Y, 20, 100)
+        board_rect2 = pg.Rect(self.board.X2, self.board.Y2, 20, 100)
         ball_rect = pg.Rect(self.X - 15, self.Y - 15, 30, 30)
 
-        if ball_rect.colliderect(board_rect):
+        if ball_rect.colliderect(board_rect) or ball_rect.colliderect(board_rect2):
             self.velocity[0] *= -1
             counter += 1
-            acceleration += 1
+            if counter == 5:
+                acceleration = acceleration*2
+            elif counter == 10:
+                acceleration = acceleration*2
+
             pg.mixer.Channel(1).play(pg.mixer.Sound('hit_sound.wav'))
             pg.mixer.Channel(2).play(pg.mixer.Sound(score_sound))
 
         # Check if the object touches the border
-        if self.X <= 20:
+        if self.X <= 20 or self.X >= 960:
             self.velocity[0] *= -1
             pg.mixer.Sound.play(damage_sound)
             counter -= 1
@@ -113,19 +127,29 @@ def main():
                 if event.key == pg.K_g:
                     game_over = True
                 if event.key == pg.K_UP:
-                    board.speed = -speed
+                    board.speed2 = -speed2
                 elif event.key == pg.K_DOWN:
+                    board.speed2 = speed2
+                elif event.key == pg.K_w:
+                    board.speed = -speed
+                elif event.key == pg.K_s:
                     board.speed = speed
             elif event.type == pg.KEYUP:
-                if event.key == pg.K_UP or event.key == pg.K_DOWN:
+                if event.key == pg.K_UP or event.key == pg.K_DOWN or event.key == pg.K_w or event.key == pg.K_s:
                     board.speed = 0
+                    board.speed2 = 0
 
         board.Y += board.speed * acceleration
+        board.Y2 += board.speed2 * acceleration
 
         if board.Y < 0:
             board.Y = 0
+        elif board.Y2 < 0:
+            board.Y2 = 0
         elif board.Y > DIS_HEIGHT - 100:
             board.Y = DIS_HEIGHT - 100
+        elif board.Y2 > DIS_HEIGHT - 100:
+            board.Y2 = DIS_HEIGHT - 100
 
         
         font = pg.font.SysFont("Verdana", 30)
@@ -134,6 +158,8 @@ def main():
 
         if counter < 0:
                 game_over = True
+
+        
                 
 
         ball.move(Boards.draw, Ball.draw)
